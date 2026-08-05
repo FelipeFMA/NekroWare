@@ -15,7 +15,7 @@ inline bool ESP_OutlineOn(bool perVisual)
 
 inline void RenderESP(ImDrawList* drawList, bool menuOpen = false)
 {
-    auto localTeam = Globals::Roblox::LocalPlayer.Team();
+    auto localTeamState = LocalTeamState();
     auto localHead = Globals::Roblox::LocalPlayer.Character().FindFirstChild("Head");
     auto localTorso = Globals::Roblox::LocalPlayer.Character().FindFirstChild("Torso");
     if (localTorso.address == 0)
@@ -40,15 +40,14 @@ inline void RenderESP(ImDrawList* drawList, bool menuOpen = false)
 
     for (auto& player : Globals::Caches::CachedPlayerObjects)
     {
-        if (player.address == Globals::Roblox::LocalPlayer.address)
+        if (IsLocalPlayer(player))
             continue;
 
         if (player.Health <= 0)
             continue;
 
         // Team check: skip teammates if enabled
-        if (Options::ESP::TeamCheck && player.Team.address != 0 && localTeam.address != 0 &&
-            player.Team.address == localTeam.address)
+        if (Options::ESP::TeamCheck && IsTeammate(player, localTeamState))
             continue;
 
         auto rigType = player.RigType;
@@ -292,8 +291,8 @@ inline void RenderESP(ImDrawList* drawList, bool menuOpen = false)
                 GetCursorPos(&point);
 
                 if (tracerOutline)
-                    drawList->AddLine(ImVec2(point.x, point.y), ImVec2(head2D.x, head2D.y), IM_COL32(0, 0, 0, 255), outlineThickness);
-                drawList->AddLine(ImVec2(point.x, point.y), ImVec2(head2D.x, head2D.y), tracerColor, tracerThickness);
+                    drawList->AddLine(ImVec2(static_cast<float>(point.x), static_cast<float>(point.y)), ImVec2(head2D.x, head2D.y), IM_COL32(0, 0, 0, 255), outlineThickness);
+                drawList->AddLine(ImVec2(static_cast<float>(point.x), static_cast<float>(point.y)), ImVec2(head2D.x, head2D.y), tracerColor, tracerThickness);
                 break;
             case 3: // Torso
                 if (tracerOutline)

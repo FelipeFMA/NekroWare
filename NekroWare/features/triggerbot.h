@@ -11,17 +11,17 @@ inline void RenderAdvancedFOV(ImDrawList* drawList)
     if (!Options::Triggerbot::AdvancedFOV || !Options::Triggerbot::ShowAdvancedFOV)
         return;
 
-    auto localTeam = Globals::Roblox::LocalPlayer.Team();
+    auto localTeamState = LocalTeamState();
     
     for (auto& player : Globals::Caches::CachedPlayerObjects)
     {
-        if (player.address == Globals::Roblox::LocalPlayer.address)
+        if (IsLocalPlayer(player))
             continue;
 
         if (player.Health <= 0)
             continue;
 
-        if (player.Team.address == localTeam.address && Options::Triggerbot::TeamCheck)
+        if (Options::Triggerbot::TeamCheck && IsTeammate(player, localTeamState))
             continue;
 
         // Helper lambda to draw 3D box around a body part with FOV expansion
@@ -190,7 +190,7 @@ inline void RunTriggerbot()
         }
     }
 
-    auto localTeam = Globals::Roblox::LocalPlayer.Team();
+    auto localTeamState = LocalTeamState();
     auto localCharacter = Globals::Roblox::LocalPlayer.Character();
     auto localHRP = localCharacter.FindFirstChild("HumanoidRootPart");
     
@@ -212,13 +212,13 @@ inline void RunTriggerbot()
     // Check each player
     for (auto& player : Globals::Caches::CachedPlayerObjects)
     {
-        if (player.address == Globals::Roblox::LocalPlayer.address)
+        if (IsLocalPlayer(player))
             continue;
 
         if (player.Health <= 0)
             continue;
 
-        if (player.Team.address == localTeam.address && Options::Triggerbot::TeamCheck)
+        if (Options::Triggerbot::TeamCheck && IsTeammate(player, localTeamState))
             continue;
 
         // Check if player is knocked (downed) - health at or below 5

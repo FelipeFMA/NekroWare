@@ -1,5 +1,6 @@
 #pragma once
 #include "globals.h"
+#include <cstring>
 
 namespace Options
 {
@@ -27,6 +28,11 @@ namespace Options
 		inline float FPSCounterX = 10.0f;
 		inline float FPSCounterY = 10.0f;
 		inline bool ShowPerformanceMetrics = false;
+	}
+	namespace Teams
+	{
+		// 0 = Team (Teams service pointer), 1 = Clothing (shirt/pants template match)
+		inline int Mode = 0;
 	}
 	namespace HitboxExpander
 	{
@@ -346,4 +352,65 @@ namespace Options
 		// Gradient effects
 		inline bool GradientEffectsEnabled = true;
 	}
+}
+
+inline bool IsLocalPlayer(const RobloxPlayer& player)
+{
+	if (player.address != 0 && player.address == Globals::Roblox::LocalPlayer.address)
+		return true;
+	if (player.Character.address != 0)
+	{
+		RobloxInstance localCharacter = Globals::Roblox::LocalPlayer.Character();
+		if (localCharacter.address != 0 && player.Character.address == localCharacter.address)
+			return true;
+	}
+	return false;
+}
+
+inline bool IsLocalPlayer(const RobloxInstance& player)
+{
+	return player.address != 0 && player.address == Globals::Roblox::LocalPlayer.address;
+}
+
+inline std::string GetCharacterClothingTemplate(const RobloxInstance& character)
+{
+	if (character.address == 0) return "";
+	auto shirt = character.FindFirstChildWhichIsA("Shirt");
+	if (shirt.address != 0)
+		return Memory->readString(shirt.address + Offsets::Clothing::Template);
+	auto pants = character.FindFirstChildWhichIsA("Pants");
+	if (pants.address != 0)
+		return Memory->readString(pants.address + Offsets::Clothing::Template);
+	return "";
+}
+
+inline bool ClothingIsTeammate(const RobloxPlayer& player, const std::string& localTemplate)
+{
+	if (localTemplate.empty()) return false;
+	std::string playerTemplate = GetCharacterClothingTemplate(player.Character);
+	if (playerTemplate.empty()) return false;
+	return localTemplate == playerTemplate;
+}
+
+struct TeamState
+{
+	RobloxInstance team = RobloxInstance(0);
+	std::string shirtTemplate;
+};
+
+inline TeamState LocalTeamState()
+{
+	TeamState s;
+	s.team = Globals::Roblox::LocalPlayer.Team();
+	s.shirtTemplate = GetCharacterClothingTemplate(Globals::Roblox::LocalPlayer.Character());
+	return s;
+}
+
+inline bool IsTeammate(const RobloxPlayer& player, const TeamState& local)
+{
+	if (Options::Teams::Mode == 1)
+		return ClothingIsTeammate(player, local.shirtTemplate);
+
+	return player.Team.address != 0 && local.team.address != 0 &&
+		player.Team.address == local.team.address;
 }

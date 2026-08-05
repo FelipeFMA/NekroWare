@@ -74,7 +74,7 @@ bool MemoryManager::attachToProcess(const std::string& processName)
 
 
 void MemoryManager::readRaw(uintptr_t address, void* buffer, uintptr_t size) {
-	Luck_ReadVirtualMemory(processHandle, reinterpret_cast<void*>(address), &buffer, size, nullptr);
+	Luck_ReadVirtualMemory(processHandle, reinterpret_cast<void*>(address), buffer, static_cast<ULONG>(size), nullptr);
 }
 
 std::string MemoryManager::readString(uintptr_t address) {

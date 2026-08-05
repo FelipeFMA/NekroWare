@@ -26,6 +26,21 @@ inline void CachePlayers()
 			}
 		}
 
+		// Re-resolve LocalPlayer by name every cycle - the cached pointer can go
+		// stale in some games, which breaks self-skip and local team reads
+		if (!Globals::Roblox::LocalName.empty())
+		{
+			for (auto& player : children)
+			{
+				if (player.Name() == Globals::Roblox::LocalName)
+				{
+					if (Globals::Roblox::LocalPlayer.address != player.address)
+						Globals::Roblox::LocalPlayer = player;
+					break;
+				}
+			}
+		}
+
 		// Cache NPCs from Workspace - look for any Model with a Humanoid
 		auto workspace = Globals::Roblox::Workspace;
 		if (workspace.address != 0 && Options::Misc::CacheNPCs)

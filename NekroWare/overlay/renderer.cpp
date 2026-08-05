@@ -377,7 +377,7 @@ void ShowImgui()
 
                 draw->AddRectFilled(ImVec2(p.x, p.y), ImVec2(p.x + s.x, p.y + s.y - 0), ImColor(8, 8, 8, 255), 4.0f); // bg
                 draw->AddRect(ImVec2(p.x + 1, p.y + 1), ImVec2(p.x + s.x - 1, p.y + s.y - 1), ImColor(27, 27, 27, 255), 4.5f); // outline
-                draw->AddRect(ImVec2(p.x - -10, p.y + 35.3), ImVec2(p.x + s.x - 480, p.y + s.y - 36.85), ImColor(26, 26, 26, 255)); // subtabs outline
+                draw->AddRect(ImVec2(p.x - -10, p.y + 35.3f), ImVec2(p.x + s.x - 480, p.y + s.y - 36.85f), ImColor(26, 26, 26, 255)); // subtabs outline
 
                 draw->AddLine(ImVec2(p.x, p.y + s.y - 27), ImVec2(p.x + s.x, p.y + s.y - 27), ImColor(27, 27, 27, 255)); // top separator
                 draw->AddLine(ImVec2(p.x, p.y + 25), ImVec2(p.x + s.x, p.y + 25), ImColor(27, 27, 27, 255)); // tab separator
@@ -396,8 +396,8 @@ void ShowImgui()
                 }
 
                 ImGui::PushFont(font);
-                draw->AddText(ImVec2(p.x + 9.5, p.y + 7), ImColor(main_color), "NekroWare");
-                draw->AddText(ImVec2(p.x + 9.5, p.y + 384), ImColor(255, 255, 255, 100), "Build:");
+                draw->AddText(ImVec2(p.x + 9.5f, p.y + 7), ImColor(main_color), "NekroWare");
+                draw->AddText(ImVec2(p.x + 9.5f, p.y + 384), ImColor(255, 255, 255, 100), "Build:");
                 draw->AddText(ImVec2(p.x + 41, p.y + 384), ImColor(main_color), ("Beta"));
 
                 const char* creditText = "Made by Zaka | s/o Claude";
@@ -579,14 +579,14 @@ void ShowImgui()
                                     if (draggedPoint == -1)
                                     {
                                         // Check if mouse is over cp1
-                                        float dist1 = sqrt(pow(mousePos.x - cp1Pos.x, 2) + pow(mousePos.y - cp1Pos.y, 2));
+                                        float dist1 = sqrtf(powf(mousePos.x - cp1Pos.x, 2.0f) + powf(mousePos.y - cp1Pos.y, 2.0f));
                                         if (dist1 <= cpRadius + 3.0f)
                                         {
                                             draggedPoint = 0;
                                         }
                                         
                                         // Check if mouse is over cp2
-                                        float dist2 = sqrt(pow(mousePos.x - cp2Pos.x, 2) + pow(mousePos.y - cp2Pos.y, 2));
+                                        float dist2 = sqrtf(powf(mousePos.x - cp2Pos.x, 2.0f) + powf(mousePos.y - cp2Pos.y, 2.0f));
                                         if (dist2 <= cpRadius + 3.0f)
                                         {
                                             draggedPoint = 1;
@@ -835,6 +835,8 @@ void ShowImgui()
                             CheckboxWithColorPicker("Skeleton", &Options::ESP::Skeleton, Options::ESP::SkeletonColor);
                             CheckboxWithColorPicker("Offscreen Arrows", &Options::ESP::OffscreenArrows, Options::ESP::OffscreenArrowColor);
                             ImGui::Checkbox("Team Check", &Options::ESP::TeamCheck);
+                            static const char* teamDetectorModes[]{ "Team", "Clothing" };
+                            ImGui::Combo("Team Detector", &Options::Teams::Mode, teamDetectorModes, IM_ARRAYSIZE(teamDetectorModes));
                             ImGui::PopStyleColor(1);
                         }
                         ImGui::EndChild();
@@ -1299,7 +1301,7 @@ void RenderRadar(ImDrawList* drawList)
     if (!localHRP.address) return;
 
     Vectors::Vector3 localPos = localHRP.Position();
-    auto localTeam = Globals::Roblox::LocalPlayer.Team();
+    auto localTeamState = LocalTeamState();
 
     bool useCamera = Options::Radar::RotateWithCamera && Globals::Roblox::Camera.address;
     Matrixes::Matrix3x3 camRot = {};
@@ -1319,13 +1321,13 @@ void RenderRadar(ImDrawList* drawList)
 
     for (auto& player : Globals::Caches::CachedPlayerObjects)
     {
-        if (player.address == Globals::Roblox::LocalPlayer.address) continue;
+        if (IsLocalPlayer(player)) continue;
         if (!player.HumanoidRootPart.address) continue;
         if (player.Health <= 0) continue;
 
         bool isTeammate = false;
-        if (Options::Radar::TeamCheck && player.Team.address != 0 && localTeam.address != 0)
-            isTeammate = (player.Team.address == localTeam.address);
+        if (Options::Radar::TeamCheck && IsTeammate(player, localTeamState))
+            isTeammate = true;
 
         Vectors::Vector3 playerPos = player.HumanoidRootPart.Position();
         float dx = playerPos.x - localPos.x;
@@ -1374,7 +1376,7 @@ ImU32 InterpolateColor(ImU32 colA, ImU32 colB, float t)
     ImU8 alpha = (ImU8)(ImU32((a >> IM_COL32_A_SHIFT) & 0xFF) * (1.0f - t) + ImU32((b >> IM_COL32_A_SHIFT) & 0xFF) * t);
     return IM_COL32(r, g, bch, alpha);
 }
-float GetPulseValue(float speed, float intensity) { return 0.5f + 0.5f * sinf(speed * ImGui::GetTime()) * intensity; }
+float GetPulseValue(float speed, float intensity) { return 0.5f + 0.5f * sinf(speed * static_cast<float>(ImGui::GetTime())) * intensity; }
 void DrawGradientRect(ImDrawList* drawList, const ImVec2& p_min, const ImVec2& p_max, ImU32 col_upr_left, ImU32 col_upr_right, ImU32 col_btm_right, ImU32 col_btm_left) {}
 void DrawHorizontalGradient(ImDrawList* drawList, const ImVec2& p_min, const ImVec2& p_max, ImU32 col_left, ImU32 col_right) {}
 void DrawVerticalGradient(ImDrawList* drawList, const ImVec2& p_min, const ImVec2& p_max, ImU32 col_top, ImU32 col_bottom) {}

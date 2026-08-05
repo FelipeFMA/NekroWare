@@ -171,7 +171,7 @@ public:
 	{
 		auto radiantsFOV = Memory->read<float>(address + Offsets::Camera::FieldOfView);
 
-		auto degreesFOV = radiantsFOV * 180 / 3.1415926535;
+		auto degreesFOV = radiantsFOV * 180.0f / 3.1415926535f;
 
 		return std::round(degreesFOV);
 
@@ -181,7 +181,7 @@ public:
 	{
 		value = std::round(value);
 
-		auto radiantsValue = value * 3.1415926535 / 180;
+		auto radiantsValue = value * 3.1415926535f / 180.0f;
 
 		Memory->write<float>(address + Offsets::Camera::FieldOfView, radiantsValue);
 	}

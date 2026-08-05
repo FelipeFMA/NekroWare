@@ -4989,7 +4989,7 @@ bool ImGui::BeginChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, b
     draw_list->PushClipRect(pos, pos + render_size);
 
     // Draw top background
-    draw_list->AddRectFilled(pos + ImVec2(0, border ? 20 : 5), pos + ImVec2(render_size.x, 25), ImColor(11, 11, 11), 0);
+    draw_list->AddRectFilled(pos + ImVec2(0.0f, border ? 20.0f : 5.0f), pos + ImVec2(render_size.x, 25.0f), ImColor(11, 11, 11), 0);
 
     // Draw gradient effect
     int fade_line_count = 150;
@@ -5011,10 +5011,10 @@ bool ImGui::BeginChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, b
     // Draw outline
     const float opacity = 0.50f;
     const ImU32 color = ImColor(255, 255, 255, static_cast<int>(opacity * 23));
-    draw_list->AddRect(pos + ImVec2(0, border ? 25 : 5), pos + render_size, color, 0);
+    draw_list->AddRect(pos + ImVec2(0.0f, border ? 25.0f : 5.0f), pos + render_size, color, 0);
 
     // Draw title text
-    draw_list->AddText(pos + ImVec2(5, border ? 22 : 7), ImColor(255, 255, 255, 100), name);
+    draw_list->AddText(pos + ImVec2(5.0f, border ? 22.0f : 7.0f), ImColor(255, 255, 255, 100), name);
 
     // Pop clipping rectangle to end custom drawing
     draw_list->PopClipRect();
@@ -5083,7 +5083,7 @@ bool ImGui::beginchildex(const char* name, ImGuiID id, const ImVec2& size_arg, b
     draw_list->PushClipRect(clip_rect.Min, clip_rect.Max);
 
     // Draw top background
-    draw_list->AddRectFilled(pos + ImVec2(0, border ? 20 : 5), pos + ImVec2(render_size.x, 25), ImColor(11, 11, 11), 0);
+    draw_list->AddRectFilled(pos + ImVec2(0.0f, border ? 20.0f : 5.0f), pos + ImVec2(render_size.x, 25.0f), ImColor(11, 11, 11), 0);
 
     // Draw gradient effect
     int fade_line_count = 150;
@@ -5106,14 +5106,14 @@ bool ImGui::beginchildex(const char* name, ImGuiID id, const ImVec2& size_arg, b
     const float opacity = 0.50f;
     const ImU32 color = ImColor(255, 255, 255, static_cast<int>(opacity * 23));
     draw_list->AddRect(
-        pos + ImVec2(0, border ? 25 : 5),
+        pos + ImVec2(0.0f, border ? 25.0f : 5.0f),
         pos + render_size,
         color,
         0
     );
 
     // Draw title
-    draw_list->AddText(pos + ImVec2(5, border ? 22 : 7), ImColor(255, 255, 255, 100), name);
+    draw_list->AddText(pos + ImVec2(5.0f, border ? 22.0f : 7.0f), ImColor(255, 255, 255, 100), name);
 
     // Restore clipping
     draw_list->PopClipRect();

@@ -16,7 +16,7 @@ inline void RenderCrosshair(ImDrawList* drawList)
     static float angle = 0.0f;
     static ImVec2 lastPos = ImVec2(0, 0);
 
-    float time = ImGui::GetTime();
+    float time = static_cast<float>(ImGui::GetTime());
     float dt = ImGui::GetIO().DeltaTime;
     
     // Get mouse cursor position

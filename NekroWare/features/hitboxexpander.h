@@ -27,7 +27,7 @@ inline void RunHitboxExpander()
                 if (!Options::HitboxExpander::Enabled)
                     break;
 
-                if (!player.address || player.address == Globals::Roblox::LocalPlayer.address)
+                if (!player.address || IsLocalPlayer(player))
                     continue;
 
                 auto character = player.Character();

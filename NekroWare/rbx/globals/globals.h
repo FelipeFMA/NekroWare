@@ -52,6 +52,7 @@ namespace Globals
         inline RobloxInstance Players(0);
         inline RobloxInstance Camera(0);
         inline RobloxInstance LocalPlayer(0);
+        inline std::string LocalName = "";
         inline int lastPlaceID;
     }
     namespace Caches

@@ -210,9 +210,10 @@ inline RobloxPlayer GetClosestPlayer()
 {
     RobloxPlayer target;
     auto maxDistance = FLT_MAX;
-    auto localTeam = Globals::Roblox::LocalPlayer.Team();
+    auto localTeamState = LocalTeamState();
     auto localCharacter = Globals::Roblox::LocalPlayer.Character();
     auto localHRP = localCharacter.FindFirstChild("HumanoidRootPart");
+
 
     POINT p;
     GetCursorPos(&p);
@@ -223,11 +224,10 @@ inline RobloxPlayer GetClosestPlayer()
         if (!HRP.address)
             continue;
 
-        if (player.address == Globals::Roblox::LocalPlayer.address)
+        if (IsLocalPlayer(player))
             continue;
 
-        if (Options::Aimbot::TeamCheck && player.Team.address != 0 && localTeam.address != 0 &&
-            player.Team.address == localTeam.address)
+        if (Options::Aimbot::TeamCheck && IsTeammate(player, localTeamState))
             continue;
 
         if (player.Health == 0)
@@ -493,9 +493,10 @@ inline void RunAimbot(ImDrawList* drawList)
     if (!Options::Aimbot::Aimbot)
         return;
 
-    auto localTeam = Globals::Roblox::LocalPlayer.Team();
+    auto localTeamState = LocalTeamState();
     auto localCharacter = Globals::Roblox::LocalPlayer.Character();
     auto localHRP = localCharacter.FindFirstChild("HumanoidRootPart");
+
     auto Dimensions = Memory->read<Vectors::Vector2>(Globals::Roblox::VisualEngine + Offsets::VisualEngine::Dimensions);
 
     if (Globals::Caches::CachedPlayerObjects.empty())
@@ -546,10 +547,10 @@ inline void RunAimbot(ImDrawList* drawList)
 
     if (Options::Aimbot::FOV && Options::Aimbot::ShowFOV)
     {
-        drawList->AddCircle(ImVec2(p.x, p.y), Options::Aimbot::FOV, FOVColor, 0, Options::Aimbot::FOVThickness);
+        drawList->AddCircle(ImVec2(static_cast<float>(p.x), static_cast<float>(p.y)), Options::Aimbot::FOV, FOVColor, 0, Options::Aimbot::FOVThickness);
         if (Options::Aimbot::ShowFOVFill)
         {
-            drawList->AddCircleFilled(ImVec2(p.x, p.y), Options::Aimbot::FOV, FOVFillColor, 0);
+            drawList->AddCircleFilled(ImVec2(static_cast<float>(p.x), static_cast<float>(p.y)), Options::Aimbot::FOV, FOVFillColor, 0);
         }
     }
 
@@ -606,8 +607,7 @@ inline void RunAimbot(ImDrawList* drawList)
         if (Options::Aimbot::CurrentTarget.address == 0 ||
             Options::Aimbot::CurrentTarget.Health == 0 ||
             (Options::Aimbot::CurrentTarget.Health <= 1 && Options::Aimbot::DownedCheck) ||
-            (Options::Aimbot::TeamCheck && localTeam.address != 0 && Options::Aimbot::CurrentTarget.Team.address != 0 &&
-             Options::Aimbot::CurrentTarget.Team.address == localTeam.address))
+            (Options::Aimbot::TeamCheck && IsTeammate(Options::Aimbot::CurrentTarget, localTeamState)))
         {
             Options::Aimbot::CurrentTarget = GetClosestPlayer();
         }

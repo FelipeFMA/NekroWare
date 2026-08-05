@@ -1377,11 +1377,11 @@ bool ImGui::Checkbox(const char* label, bool* v)
     const float pad = ImMax(1.0f, IM_FLOOR(square_sz / 4.5f));
 
     // checkbox color
-    window->DrawList->AddRectFilled(ImVec2(check_bb.Min.x + pad + 2.5, check_bb.Min.y + pad + 2.5), ImVec2(check_bb.Max.x - pad - 2.5, check_bb.Max.y - pad - 2.5), ImColor(30, 30, 30));
+    window->DrawList->AddRectFilled(ImVec2(check_bb.Min.x + pad + 2.5f, check_bb.Min.y + pad + 2.5f), ImVec2(check_bb.Max.x - pad - 2.5f, check_bb.Max.y - pad - 2.5f), ImColor(30, 30, 30));
     window->DrawList->AddRect(ImVec2(check_bb.Min.x + pad + 1, check_bb.Min.y + pad + 1), ImVec2(check_bb.Max.x - pad - 1, check_bb.Max.y - pad - 1), ImColor(0, 0, 0, alpha), 0);
     if (check_t > 0.0f)
     {
-        window->DrawList->AddRectFilled(ImVec2(check_bb.Min.x + pad + 2.5, check_bb.Min.y + pad + 2.5), ImVec2(check_bb.Max.x - pad - 2.5, check_bb.Max.y - pad - 2.5), ImColor(
+        window->DrawList->AddRectFilled(ImVec2(check_bb.Min.x + pad + 2.5f, check_bb.Min.y + pad + 2.5f), ImVec2(check_bb.Max.x - pad - 2.5f, check_bb.Max.y - pad - 2.5f), ImColor(
             static_cast<int>(main_color.x * 255.0f),
             static_cast<int>(main_color.y * 255.0f),
             static_cast<int>(main_color.z * 255.0f),
@@ -1408,7 +1408,7 @@ bool ImGui::Checkbox(const char* label, bool* v)
     if (g.LogEnabled)
         LogRenderedText(&label_pos, mixed_value ? "[~]" : *v ? "[x]" : "[ ]");
     if (label_size.x > 0.0f)
-        window->DrawList->AddText(check_bb.Min + ImVec2(pad, pad) + ImVec2(18, -1.001), ImColor(250, 250, 250, static_cast<int>(current_alpha)), label);
+        window->DrawList->AddText(check_bb.Min + ImVec2(pad, pad) + ImVec2(18.0f, -1.001f), ImColor(250, 250, 250, static_cast<int>(current_alpha)), label);
 
     IMGUI_TEST_ENGINE_ITEM_INFO(id, label, window->DC.ItemFlags | ImGuiItemStatusFlags_Checkable | (*v ? ImGuiItemStatusFlags_Checked : 0));
     return pressed;
@@ -1530,12 +1530,12 @@ bool ImGui::RadioButton(const char* label, bool active, const bool theme)
     IMGUI_TEST_ENGINE_ITEM_INFO(id, label, window->DC.ItemFlags);
     return pressed;
 }
-void arcs(int x, int y, int r1, int r2, int s, int d, ImColor col)
+void arcs(float x, float y, float r1, float r2, int s, int d, ImColor col)
 {
     for (int i = s; i < s + d; i++)
     {
-        auto rad = i * 3.14 / 180;
-        ImGui::GetWindowDrawList()->AddLine(ImVec2(x + cos(rad) * r1, y + sin(rad) * r1), ImVec2(x + cos(rad) * r2, y + sin(rad) * r2), col);
+        float rad = static_cast<float>(i) * 3.14f / 180.0f;
+        ImGui::GetWindowDrawList()->AddLine(ImVec2(x + cosf(rad) * r1, y + sinf(rad) * r1), ImVec2(x + cosf(rad) * r2, y + sinf(rad) * r2), col);
     }
 }
 bool ImGui::ThemeSwitch(const char* label, bool* v)
@@ -1575,7 +1575,7 @@ bool ImGui::ThemeSwitch(const char* label, bool* v)
 //    const float square_sz = GetFrameHeight();
     const float radius = (square_sz - 2.0f) * 0.5f;
         const float pad = ImMax(1.0f, IM_FLOOR(square_sz / 6.0f));
-        static int add = 1.f;
+        static int add = 1;
         static int themeup[3] = { 244 , 244, 244 };
         if (*v) {
             if (themeup[0] >= 27)
@@ -1604,8 +1604,8 @@ bool ImGui::ThemeSwitch(const char* label, bool* v)
             if (add >= 1)
                 add -= 5;
         
-        arcs(check_bb.Min.x + pad + label_size.x - 1, check_bb.Min.y + pad * 3.6, 0, radius, 90 + add, 180, ImColor(themeup[0], themeup[1], themeup[2], 255));
-        window->DrawList->AddCircle(check_bb.Min + ImVec2(pad + label_size.x, pad * 3.6), radius, ImColor(themeup[0], themeup[1], themeup[2]), 32, 2);
+        arcs(check_bb.Min.x + pad + label_size.x - 1, check_bb.Min.y + pad * 3.6f, 0, radius, 90 + add, 180, ImColor(themeup[0], themeup[1], themeup[2], 255));
+        window->DrawList->AddCircle(check_bb.Min + ImVec2(pad + label_size.x, pad * 3.6f), radius, ImColor(themeup[0], themeup[1], themeup[2]), 32, 2);
 
     ImVec2 label_pos = ImVec2(check_bb.Max.x + style.ItemInnerSpacing.x, check_bb.Min.y + style.FramePadding.y);
     if (g.LogEnabled)
@@ -1961,7 +1961,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     const ImVec2 label_size = CalcTextSize(label, NULL, true);
     const float expected_w = CalcItemWidth();
     const float w = (flags & ImGuiComboFlags_NoPreview) ? arrow_size : expected_w;
-    const ImRect frame_bb(window->DC.CursorPos + ImVec2(30, text ? 10 : 0), window->DC.CursorPos + ImVec2(-25.7, text ? 10 : 0) + ImVec2(window->Size.x - 8, label_size.y + style.FramePadding.y * 2.0f));
+    const ImRect frame_bb(window->DC.CursorPos + ImVec2(30.0f, text ? 10.0f : 0.0f), window->DC.CursorPos + ImVec2(-25.7f, text ? 10.0f : 0.0f) + ImVec2(window->Size.x - 8, label_size.y + style.FramePadding.y * 2.0f));
     const ImRect total_bb(frame_bb.Min, frame_bb.Max + ImVec2(label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f, 0.0f));
     ItemSize(total_bb, style.FramePadding.y);
     if (!ItemAdd(total_bb, id, &frame_bb))
@@ -3360,7 +3360,7 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* p_dat
     const ImGuiID id = window->GetID(label);
     const float w = CalcItemWidth();
     const ImVec2 label_size = CalcTextSize(label, NULL, true);
-    const ImRect frame_bb(window->DC.CursorPos + ImVec2(32.5, 10.6), window->DC.CursorPos + ImVec2(window->Size.x - 35, 20 + label_size.y + style.FramePadding.y * 1.3f));
+    const ImRect frame_bb(window->DC.CursorPos + ImVec2(32.5f, 10.6f), window->DC.CursorPos + ImVec2(window->Size.x - 35, 20 + label_size.y + style.FramePadding.y * 1.3f));
     const ImRect total_bb(frame_bb.Min, frame_bb.Max + ImVec2(label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f, 0.0f));
 
     ItemSize(total_bb, style.FramePadding.y);
