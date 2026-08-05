@@ -20,7 +20,7 @@ namespace Options
 		inline int NotificationMaxQueue = 10;
 		inline float NotificationAnimationSpeed = 1.0f;
 		inline int NotificationDuration = 3000; // milliseconds
-		inline int CurrentTheme = 0; // 0 = Dark, 1 = Light, 2 = Pink, 3 = Purple, 4 = Blue, 5 = Green
+		inline int CurrentTheme = 0; // 0 = Dark (OLED), 1 = Light, 2-5 = grayscale variants (unused - ApplyTheme is a stub)
 		inline bool AnimationsEnabled = true;
 		inline float AnimationSpeed = 1.0f;
 		inline bool FPSCounterEnabled = true;

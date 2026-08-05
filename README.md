@@ -38,7 +38,7 @@ NekroWare is an **external** cheat: a separate .exe that attaches to the Roblox 
 - **Combat:** Aimbot (mouse-based, sticky aim), Triggerbot (fires when crosshair is over an enemy), Hitbox expander, Walk-through.
 - **Visuals:** Full ESP (boxes, 2D/3D, tracers, skeleton, names, distance, health, head circle, corner ESP), Radar, custom Crosshair, advanced FOV boxes.
 - **Movement:** Fly, WalkSpeed (velocity based), Infinite jump, Auto jump, Platform stand, Noclip.
-- **Misc:** Camera FOV changer, Headless, Gravity modifier, Jump power modifier, Name occlusion / nameplate hiding, Macro (I/O key spam), keybind list, FPS counter, themes.
+- **Misc:** Camera FOV changer, Headless, Gravity modifier, Jump power modifier, Name occlusion / nameplate hiding, Macro (I/O key spam), keybind list, FPS counter, monochrome OLED UI theme.
 
 Everything is configurable from the in-game menu. No DLL injection is used.
 
@@ -81,6 +81,7 @@ NekroWare/
     utils/Header.h                embedded icon/logo font data
     imgui/                        ImGui 1.9x-ish + DX11/Win32 backends + KeyBind widget
 build/                            Build output (NekroWare.exe) + intermediates (build/shit)
+build.bat                         One-click Release|x64 build script (see Building)
 README.md                         This file
 ```
 
@@ -153,6 +154,16 @@ overlay window, positions it over the Roblox window, and runs the ImGui frame lo
 ImGui renders the menu (tabs + widgets bound to `Options::*`), then the background draw list
 is used for ESP/radar/crosshair etc. so they are drawn while the menu is closed too.
 
+The UI is a **monochrome OLED theme** (black/gray/white only): the palette is applied in
+`ShowImgui()` right after context creation (near-black window/child/popup backgrounds, gray
+frames/buttons, white text), and every accent-colored element (checkmarks, tabs, sliders,
+FOV circles, the "NekroWare" logo) is driven by `main_color`
+(`overlay/utils/utils.h`) which defaults to white and follows
+`Options::Misc::MenuAccentColor` (default `{1,1,1}` in `rbx/globals/options.h`). The "Menu
+Accent" color picker (Visuals > Colours) can still recolor the accent at runtime; the old
+`ApplyTheme`/`SetXTheme` theme functions are empty stubs and the preset arrays in
+`Options::UIThemes` are unused.
+
 `overlay/imgui/KeyBind.h` provides `KeybindSelector` and `KeyBind::IsPressed` for
 keybindable features, plus `ToggleType` conventions (0 = hold, 1 = toggle) used by
 several features.
@@ -197,7 +208,7 @@ Important layout facts this dump enforces:
 | Visual | Custom crosshair (static / pulse / spin, colors, spin speed) | `features/crosshair.h`, `Options::Crosshair` |
 | Visual | Keybind list overlay | `renderer.cpp`, `Options::Misc::KeybindList` |
 | Visual | FPS counter (top right) + watermark ("NekroWare") | `renderer.cpp` |
-| Visual | Themes (dark/light/pink/purple/blue/green) & menu accent color | `renderer.cpp`, `Options::Misc` |
+| Visual | Monochrome OLED theme (black/gray/white) + menu accent color picker | `renderer.cpp`, `Options::Misc` |
 | Movement | Fly (WASD + space/ctrl, speed) | `features/fly.h`, `Options::Fly` |
 | Movement | Walk speed (velocity based) | `features/speed.h`, `Options::WalkSpeed` |
 | Movement | Infinite jump, Auto jump, Platform stand | `features/misc.h`, `Options::InfiniteJump/AutoJump/PlatformStand` |
@@ -240,6 +251,17 @@ Notes:
   **errors** (C2xxx/C4xxx with "error") matter.
 - If Windows Defender deletes the freshly built exe, add an exclusion for the `build\`
   folder (or the repo), or rebuild with an output dir outside the repo. See Troubleshooting.
+
+### One-click build (build.bat)
+
+Double-click `build.bat` in the repo root (or run it from any terminal). It:
+
+1. Locates `MSBuild.exe` - checks the known VS 2022+/Build Tools install paths
+   (`%ProgramFiles(x86)%\Microsoft Visual Studio\18\...`), then falls back to `vswhere`,
+   then to `msbuild` on `PATH` (e.g. inside a Developer Command Prompt).
+2. Builds `Release|x64` (`NekroWare.sln /p:Configuration=Release /p:Platform=x64 /m`).
+3. Prints `[BUILD OK] Output: build\NekroWare.exe` on success, or `[BUILD FAILED]`
+   and pauses so the window stays open either way.
 
 ### Building from this repo's exact toolchain (PowerShell)
 
