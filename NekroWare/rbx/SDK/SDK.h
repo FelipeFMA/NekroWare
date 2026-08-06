@@ -25,7 +25,10 @@ public:
 
 	inline std::string Name() const
 	{
-		return Memory->readString(Memory->read<uintptr_t>(address + Offsets::Instance::Name));
+		uintptr_t nameContainer = Memory->read<uintptr_t>(address + Offsets::Instance::NameContainer);
+		if (nameContainer == 0)
+			return "";
+		return Memory->readString(nameContainer + Offsets::Instance::Name);
 	}
 
 	inline std::string Class() const

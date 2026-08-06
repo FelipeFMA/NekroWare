@@ -892,7 +892,11 @@ inline void RunAimbot(ImDrawList* drawList)
         target = GetClosestPlayer();
     }
 
-    auto sensitivity = Memory->read<float>(Memory->getBaseAddress() + Offsets::MouseService::SensitivityPointer);
+    float sensitivity;
+    if (Offsets::MouseService::SensitivityPointer != 0)
+        sensitivity = Memory->read<float>(Memory->getBaseAddress() + Offsets::MouseService::SensitivityPointer);
+    else
+        sensitivity = Options::Aimbot::Sensitivity;
 
     // Debug: draw a ray from the camera to every near enemy, green = visible,
     // red = blocked. Lets you SEE what the visibility check thinks.

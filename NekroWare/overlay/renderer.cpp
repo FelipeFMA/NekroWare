@@ -448,6 +448,13 @@ void ShowImgui()
                             ImGui::Checkbox("Knocked Check", &Options::Aimbot::DownedCheck);
                             ImGui::Checkbox("Sticky Aim", &Options::Aimbot::StickyAim);
                             ImGui::Checkbox("Prediction", &Options::Aimbot::Prediction);
+                            if (Offsets::MouseService::SensitivityPointer == 0)
+                            {
+                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 215, 0, 255));
+                                ImGui::TextWrapped("This client build doesn't expose mouse sensitivity - using the manual slider below.");
+                                ImGui::PopStyleColor();
+                            }
+                            ImGui::SliderFloat("Client Sensitivity", &Options::Aimbot::Sensitivity, 0.1f, 10.0f, "%.2f");
                             ImGui::Checkbox("Shake", &Options::Aimbot::Shake);
                             ImGui::Checkbox("Stutter", &Options::Aimbot::Stutter);
                             ImGui::Checkbox("Show FOV", &Options::Aimbot::ShowFOV);

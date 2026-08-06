@@ -103,6 +103,7 @@ namespace Options
 		inline bool TeamCheck = false;
 		inline bool VisibilityCheck = false;
 		inline bool DebugRays = false;
+		inline float Sensitivity = 1.f; // manual fallback when MouseService::SensitivityPointer is missing
 		inline bool DownedCheck = false;
 		inline bool StickyAim = false;
 		inline float FOV = 100.f;
