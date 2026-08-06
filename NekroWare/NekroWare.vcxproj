@@ -180,6 +180,8 @@
     <ClInclude Include="features\macro.h" />
     <ClInclude Include="features\crosshair.h" />
     <ClInclude Include="features\worldcache.h" />
+    <ClInclude Include="rbx\OffsetsLoader.h" />
+    <ClInclude Include="rbx\offsets_registry.h" />
   </ItemGroup>
   <!-- Assembly Files -->
   <ItemGroup>

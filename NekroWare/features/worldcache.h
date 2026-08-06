@@ -192,10 +192,10 @@ inline void CollectWorldPartAddresses(const RobloxInstance& inst, const std::vec
 // for occlusion and refreshing every part every tick is what ate a whole core.
 inline void RefreshWorldPartGeometry(AimbotVis::WorldParts& parts)
 {
-	constexpr uintptr_t SNAP_BASE = Offsets::Primitive::Rotation;
-	constexpr uintptr_t SNAP_POS = Offsets::Primitive::Position - SNAP_BASE;
-	constexpr uintptr_t SNAP_SIZE = Offsets::Primitive::Size - SNAP_BASE;
-	constexpr uintptr_t SNAP_LEN = Offsets::Primitive::Size - SNAP_BASE + sizeof(Vectors::Vector3);
+	const uintptr_t SNAP_BASE = Offsets::Primitive::Rotation;
+	const uintptr_t SNAP_POS = Offsets::Primitive::Position - SNAP_BASE;
+	const uintptr_t SNAP_SIZE = Offsets::Primitive::Size - SNAP_BASE;
+	const uintptr_t SNAP_LEN = Offsets::Primitive::Size - SNAP_BASE + sizeof(Vectors::Vector3);
 
 	float radius = (std::max)(300.0f, Options::Aimbot::Range + 200.0f);
 	float radiusSq = radius * radius;
@@ -205,7 +205,8 @@ inline void RefreshWorldPartGeometry(AimbotVis::WorldParts& parts)
 	if (haveCam)
 		camPos = Memory->read<Vectors::Vector3>(Globals::Roblox::Camera.address + Offsets::Camera::Position);
 
-	uint8_t buffer[SNAP_LEN];
+	static thread_local std::vector<uint8_t> buffer;
+	buffer.resize(SNAP_LEN);
 
 	for (auto& wp : parts)
 	{
@@ -224,11 +225,11 @@ inline void RefreshWorldPartGeometry(AimbotVis::WorldParts& parts)
 				continue;
 		}
 
-		Memory->readRaw(wp.primitive + SNAP_BASE, buffer, SNAP_LEN);
+		Memory->readRaw(wp.primitive + SNAP_BASE, buffer.data(), SNAP_LEN);
 
-		memcpy(&wp.rotation, buffer + 0, sizeof(wp.rotation));
-		memcpy(&wp.position, buffer + SNAP_POS, sizeof(wp.position));
-		memcpy(&wp.size, buffer + SNAP_SIZE, sizeof(wp.size));
+		memcpy(&wp.rotation, buffer.data() + 0, sizeof(wp.rotation));
+		memcpy(&wp.position, buffer.data() + SNAP_POS, sizeof(wp.position));
+		memcpy(&wp.size, buffer.data() + SNAP_SIZE, sizeof(wp.size));
 
 		// Terrain AABBs cover the whole map - skip, they would block every ray.
 		if (wp.size.x > 100000.0f || wp.size.y > 100000.0f || wp.size.z > 100000.0f)

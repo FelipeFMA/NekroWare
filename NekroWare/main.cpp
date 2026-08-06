@@ -15,6 +15,7 @@
 #include "rbx/Caches/playerobjectscache.h"
 #include "rbx/Caches/TPHandler.h"
 #include "rbx/globals/globals.h"
+#include "rbx/OffsetsLoader.h"
 
 bool IsGameRunning(const wchar_t* windowTitle)
 {
@@ -100,6 +101,8 @@ int main()
 
     log(std::string("Roblox PID -> " + std::to_string(Memory->getProcessId())), 1);
     log(std::string("Roblox Base Address -> 0x" + toHexString(std::to_string(Memory->getBaseAddress()), false, true)), 1);
+
+    OffsetsDynamic::LoadOffsets();
 
     Globals::executablePath = GetExecutableDir();
 

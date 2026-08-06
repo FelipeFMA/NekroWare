@@ -55,8 +55,11 @@ NekroWare/
     MemoryManager.h/.cpp          Process handle, PID, module base, read/write helpers
     Luck.asm                      Direct syscall stubs (NtReadVirtualMemory / NtWriteVirtualMemory)
   rbx/
-    offsets.h                     **THE** offsets header - verbatim dump, never hand-edit
-    SDK/SDK.h                     RobloxInstance class (child tree walking, property reads)
+    offsets.h                      Offsets fallback header - replaced verbatim from the dump (see below)
+    offsets_registry.h             AUTO-GENERATED name->variable map (tools/gen_offsets_registry.ps1)
+    OffsetsLoader.h                Resolves the running client version, downloads matching
+                                   offsets from offsets.imtheo.lol at startup, applies them at runtime
+    SDK/SDK.h                      RobloxInstance class (child tree walking, property reads)
     math/math.h                   Vectors/Matrix math types
     globals/globals.h             Global state (DataModel, Workspace, Players, caches, ...)
     globals/options.h             Every feature toggle & setting lives here (Options::)
@@ -82,6 +85,7 @@ NekroWare/
     imgui/                        ImGui 1.9x-ish + DX11/Win32 backends + KeyBind widget
 build/                            Build output (NekroWare.exe) + intermediates (build/shit)
 build.bat                         One-click Release|x64 build script (see Building)
+tools/gen_offsets_registry.ps1    Regenerates offsets_registry.h after replacing offsets.h
 README.md                         This file
 ```
 
@@ -170,18 +174,34 @@ several features.
 
 ### Offsets file
 
-`rbx/offsets.h` is a **verbatim dump** generated for a *specific* Roblox client build.
-It is a header of `constexpr` values grouped into namespaces that mirror the class layout:
+Offsets are **resolved at runtime** by `rbx/OffsetsLoader.h`, right after attaching
+(`OffsetsDynamic::LoadOffsets()` in `main.cpp`):
 
-```cpp
-namespace Instance { inline constexpr uintptr_t Name = 0x68; ... }
-namespace Player   { inline constexpr uintptr_t LocalPlayer = 0x7fd51b8; ... }
-```
+1. **Detect the version** - the running `RobloxPlayerBeta.exe` path is read from the
+   toolhelp module snapshot; the `version-xxxxxxxxxxxxxxxx` folder name is extracted
+   from it (works for Fishstrap and the official launcher, both use
+   `...\Versions\version-xxx\RobloxPlayerBeta.exe`).
+2. **Download** `https://offsets.imtheo.lol/<version>/offsets.hpp` over HTTPS (WinHTTP).
+3. **Parse & apply** - the header is parsed into `Namespace::Member` keys and each
+   value is written into the matching runtime variable in `rbx/offsets.h`, via the
+   name->address map in `rbx/offsets_registry.h`.
 
-The header comment carries the client version it was dumped for. The current file is for
-`version-145f189a6a974303` (Fishstrap). **Never edit it by hand** - regenerate it (see
-[How to update offsets](#how-to-update-offsets)). All feature code references it as
-`Offsets::Namespace::Member`.
+That means the cheat auto-adapts to the client build it finds - no manual dump swap
+needed after every Roblox update. Static pointers (FakeDataModel, VisualEngine, ...)
+and any moved offsets all come from the matching build.
+
+**Fallback:** if detection, download or parsing fails, the cheat keeps the built-in
+values compiled from `rbx/offsets.h` (a verbatim dump generated for a specific build)
+and logs it. `rbx/offsets.h` uses runtime variables (`inline uintptr_t`) whose initial
+values are the dump's; the loader only overrides what the downloaded header contains,
+so members missing from a newer dump keep their fallback silently (e.g. the aimbot's
+`MouseService::SensitivityPointer == 0` guard).
+
+The dump header comment carries the client version it was made for - the current file
+is for `version-d584fb6c717a43d9` (Fishstrap). **Never edit `rbx/offsets.h` values by
+hand** - replace it verbatim from the dump and run the registry script (see
+[How to update offsets](#how-to-update-offsets)). All feature code references offsets
+as `Offsets::Namespace::Member`.
 
 Important layout facts this dump enforces:
 
@@ -397,23 +417,42 @@ the fields the feature needs (see below - that is exactly what happened to Silen
 
 ## How to update offsets
 
-The single most important maintenance task. Roblox updates its client constantly; whenever
-the running client build changes, **every offset can move**.
+Offsets are fetched **automatically at startup** for the client build the cheat finds
+(see the [Offsets file](#offsets-file) section): version is detected from the running
+process path, the matching header is downloaded from `offsets.imtheo.lol`, and applied
+at runtime. `rbx/offsets.h` is only the offline fallback, so in practice you rarely
+touch it after a Roblox update.
 
-### 1. Know which client build you are on
+You still need to refresh `rbx/offsets.h` when:
 
-The dump matches a specific client. In this repo the reference build is
-`version-145f189a6a974303` (Fishstrap version directory:
-`%LOCALAPPDATA%\Fishstrap\Versions\version-145f189a6a974303\RobloxPlayerBeta.exe`).
-The dump file header records the version it was made for. **The cheat will only work
-reliably while the running client matches the dump.**
+- **The URL is unreachable / you're offline** - then the fallback build determines
+  whether the cheat works.
+- The fallback is the *only* source the loader has, so keep it recent.
 
-### 2. Get the new dump
+To update the fallback (`rbx/offsets.h`):
 
-Download the dump for your client build from `https://offsets.imtheo.lol/Offsets.hpp`
-(or your preferred source) and **replace `rbx/offsets.h` with it, verbatim, without any
-edits**. The file is a self-contained C++ header; nothing else in the project needs to know
-about the version.
+### 1. Get the dump for your client build
+
+Download from `https://offsets.imtheo.lol/Offsets.hpp` (or your preferred source) and
+**replace `rbx/offsets.h` with it, verbatim, without any edits**. The file is a
+self-contained header; nothing else needs to know about the version.
+
+### 2. Regenerate the registry
+
+The loader needs a map of every offset variable so it can override them at runtime.
+After replacing `offsets.h`:
+
+```
+powershell -ExecutionPolicy Bypass -File tools\gen_offsets_registry.ps1
+```
+
+This script:
+- converts the dump's `inline constexpr uintptr_t` members to `inline uintptr_t`
+  (values kept as the fallback, allowed to be overridden at startup),
+- regenerates `rbx/offsets_registry.h` with `OFFSET_REG(Namespace, Member)` entries.
+
+The registry is a compile-time list, so if a dump *removes* a member the entry simply
+never gets overridden (fallback stays) - do not hand-edit the registry.
 
 ### 3. Compile and let the compiler find what broke
 
@@ -465,10 +504,13 @@ no old values may be kept.
 
 ## Maintenance
 
-- **Keep offsets in sync with the client build.** After every Roblox/Fishstrap update,
-  refresh `rbx/offsets.h` (section above) and rebuild. Stale offsets = no ESP, crashes or
-  garbage values - never silent working-but-wrong reads if you grep properly.
-- **Never hand-edit `rbx/offsets.h`.** Regenerate it from the dump source and fix call sites.
+- **Keep offsets in sync with the client build.** Roblox/Fishstrap updates are handled
+  automatically: the loader fetches matching offsets at startup from
+  `offsets.imtheo.lol`, so stale offsets only bite when offline / download fails
+  (then the built-in fallback matters). Keep `rbx/offsets.h` fresh anyway (see
+  [How to update offsets](#how-to-update-offsets)).
+- **Never hand-edit `rbx/offsets.h`.** Replace it from the dump source and run
+  `tools\gen_offsets_registry.ps1`, then fix call sites.
 - **Keep `Options` in sync with the menu.** A toggle with no UI (or UI writing to a removed
   option) is dead weight - delete both sides together.
 - **Mind the instance-tree cost.** `FindFirstChild` / `GetChildren()` walk memory lists and

@@ -135,17 +135,18 @@ inline bool ReadLivePart(AimbotVis::WorldPart& wp)
 	if (!wp.primitive)
 		return false;
 
-	constexpr uintptr_t SNAP_BASE = Offsets::Primitive::Rotation;
-	constexpr uintptr_t SNAP_POS = Offsets::Primitive::Position - SNAP_BASE;
-	constexpr uintptr_t SNAP_SIZE = Offsets::Primitive::Size - SNAP_BASE;
-	constexpr uintptr_t SNAP_LEN = Offsets::Primitive::Size - SNAP_BASE + sizeof(Vectors::Vector3);
+	const uintptr_t SNAP_BASE = Offsets::Primitive::Rotation;
+	const uintptr_t SNAP_POS = Offsets::Primitive::Position - SNAP_BASE;
+	const uintptr_t SNAP_SIZE = Offsets::Primitive::Size - SNAP_BASE;
+	const uintptr_t SNAP_LEN = Offsets::Primitive::Size - SNAP_BASE + sizeof(Vectors::Vector3);
 
-	uint8_t buffer[SNAP_LEN];
-	Memory->readRaw(wp.primitive + SNAP_BASE, buffer, SNAP_LEN);
+	static thread_local std::vector<uint8_t> buffer;
+	buffer.resize(SNAP_LEN);
+	Memory->readRaw(wp.primitive + SNAP_BASE, buffer.data(), SNAP_LEN);
 
-	memcpy(&wp.rotation, buffer + 0, sizeof(wp.rotation));
-	memcpy(&wp.position, buffer + SNAP_POS, sizeof(wp.position));
-	memcpy(&wp.size, buffer + SNAP_SIZE, sizeof(wp.size));
+	memcpy(&wp.rotation, buffer.data() + 0, sizeof(wp.rotation));
+	memcpy(&wp.position, buffer.data() + SNAP_POS, sizeof(wp.position));
+	memcpy(&wp.size, buffer.data() + SNAP_SIZE, sizeof(wp.size));
 
 	if (wp.size.x > 100000.0f || wp.size.y > 100000.0f || wp.size.z > 100000.0f)
 	{
