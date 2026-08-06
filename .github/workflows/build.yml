@@ -2,12 +2,18 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0). If set, creates a GitHub Release with NekroWare.exe attached as a raw file (no zip).'
+        required: false
   push:
     branches: [ main, master ]
 
 jobs:
   build:
     runs-on: windows-2025
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,3 +30,13 @@ jobs:
           name: NekroWare
           path: build/NekroWare.exe
           if-no-files-found: error
+
+      - name: Create GitHub Release with raw NekroWare.exe
+        if: inputs.version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: NekroWare v${{ inputs.version }}
+          body: |
+            Built by GitHub Actions from commit ${{ github.sha }}
+          files: build/NekroWare.exe
