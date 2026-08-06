@@ -296,30 +296,6 @@ namespace Options
 		inline float BackgroundColor[4] = {0.0f, 0.0f, 0.0f, 0.7f};
 		inline float CrosshairColor[3] = {1.0f, 1.0f, 1.0f};
 	}
-	namespace SilentAim
-	{
-		inline int Key = 0;
-		inline int ToggleType = 0;   // 0 Hold, 1 Toggle
-
-		inline bool Enabled = false;
-		inline bool TeamCheck = true;
-		inline bool DownedCheck = true;
-		inline float FOV = 100.0f;
-		inline float Range = 1000.0f;
-		inline int TargetBone = 0;   // reuses aimbot's part enum
-		inline bool Prediction = false;
-		inline float PredictionX = 1.0f;
-		inline float PredictionY = 1.0f;
-
-		// Method selection: 0 = PlayerMouse.Hit + Target write (stable), 1 = UnitRay + Hit + Target (unverified - may crash)
-		inline int Method = 0;
-		inline bool HitboxOnFire = false;
-		inline float HitboxMult = 5.0f;
-		inline int HitboxFrames = 2;
-
-		inline uintptr_t CurrentTarget = 0;
-		inline bool Toggled = false;
-	}
 	namespace UIThemes
 	{
 		// Theme Color Presets (monochrome OLED)

@@ -172,9 +172,6 @@
     <ClInclude Include="features\aimbot.h" />
     <ClInclude Include="overlay\imgui\KeyBind.h" />
     <ClInclude Include="rbx\Caches\TPHandler.h" />
-    <ClInclude Include="rbx\configs\configs.h" />
-    <ClInclude Include="rbx\configs\json.hpp" />
-    <ClInclude Include="rbx\configs\json_fwd.hpp" />
     <ClInclude Include="features\misc.h" />
     <ClInclude Include="features\triggerbot.h" />
     <ClInclude Include="features\macro.h" />
@@ -186,9 +183,6 @@
   <!-- Assembly Files -->
   <ItemGroup>
     <MASM Include="Memory\Luck.asm" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Offsetsnewest.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

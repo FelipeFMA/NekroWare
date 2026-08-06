@@ -25,8 +25,6 @@ It reads/writes the Roblox client process directly and renders an in-game style 
 8. [How to remove a feature](#how-to-remove-a-feature)
 9. [How to update offsets](#how-to-update-offsets)
 10. [Maintenance](#maintenance)
-11. [Troubleshooting](#troubleshooting)
-12. [Known dead code & leftovers](#known-dead-code--leftovers)
 
 ---
 
@@ -66,7 +64,6 @@ NekroWare/
     Caches/playercache.h          CachePlayers thread (Players + optional NPCs, every 5 s)
     Caches/playerobjectscache.h   CachePlayerObjects thread (fills RobloxPlayer structs)
     Caches/TPHandler.h            Teleport/leave-game handler (re-resolves the tree)
-    configs/                      DEAD CODE - JSON config save/load, not wired up (see below)
   features/
     aimbot.h                      RunAimbot + GetClosestPlayer (mouse aim)
     triggerbot.h                  RunTriggerbot + RenderAdvancedFOV
@@ -77,6 +74,7 @@ NekroWare/
     speed.h                       SpeedLoop (walk speed)
     hitboxexpander.h              RunHitboxExpander (size + collision bits)
     macro.h                       RunMacro (I/O key spam)
+    worldcache.h                  World-part raycast cache (aimbot visibility checks)
   overlay/
     renderer.h / renderer.cpp     DX11 overlay window + ImGui menu (ShowImgui)
     utils/W2S.h                   WorldToScreen (view matrix projection)
@@ -255,7 +253,7 @@ Requirements:
   - the **v145** C++ toolset (MSVC),
   - Windows SDK,
   - **MASM (ml64.exe)** - needed for `Memory/Luck.asm` (it comes with the "Desktop development with C++" workload).
-- No third-party libraries: ImGui and json are vendored in-tree.
+- No third-party libraries: ImGui is vendored in-tree.
 
 From a **Developer Command Prompt for VS** (or using `MSBuild.exe` directly):
 
@@ -270,10 +268,8 @@ Notes:
 - Only `Release|x64` is actually used/tested. `Debug|Win32` / `Release|Win32` configs exist
   but are not maintained; the cheat is x64 only.
 - The project sets `<TargetName>NekroWare</TargetName>` so the exe is named `NekroWare.exe`.
-- Build logs: many C4244/C4305 conversion warnings are normal and pre-existing; only
-  **errors** (C2xxx/C4xxx with "error") matter.
 - If Windows Defender deletes the freshly built exe, add an exclusion for the `build\`
-  folder (or the repo), or rebuild with an output dir outside the repo. See Troubleshooting.
+  folder (or the repo), or rebuild with an output dir outside the repo.
 
 ### One-click build (build.bat)
 
@@ -525,47 +521,8 @@ no old values may be kept.
   the chasing - reuse them instead of inlining new offsets.
 - **Team checks are pointer comparisons** (`player.Team.address == localTeam.address`),
   not string comparisons, in this dump's layout. Keep that pattern.
-- **Build logs** contain many C4244 warnings - they are noise. Only errors block the build.
-- **Backups:** `rbx/globals/globals.h.bak` and `options.h.backup` are stale leftover backups;
-  they are not compiled. Delete them when you are confident.
 - **Credits:** the in-menu credit line ("Made by Zaka | s/o Claude") and the embedded
   icon/logo in `overlay/utils/Header.h` are original assets - leave them unless you rebrand.
-
----
-
-## Troubleshooting
-
-| Symptom | Cause / fix |
-|---|---|
-| "Roblox not found!" then hangs | Roblox window isn't titled "Roblox" or isn't open. Open a game first, then start the exe. |
-| "Failed to attach" | Not running as Administrator, or Roblox player isn't the `RobloxPlayerBeta.exe` process (some launchers use different process names). |
-| Exe disappears after build | Windows Defender quarantines it (direct syscalls + `PROCESS_ALL_ACCESS` look suspicious). Add an exclusion for the `build\` folder or the whole repo, or build with a custom `OutDir` outside the repo. |
-| Compile errors like `Offsets::X is not a member` | Offsets dump out of date / wrong build. See [How to update offsets](#how-to-update-offsets). |
-| ESP shows nothing | Stale offsets, or you are not in a game (DataModel never became "Ugc"). Check the console log. |
-| Aimbot targets teammates | Team check off, or the team instances are 0 (no teams in that game - then pointer compare never matches and no one is filtered, which is correct). |
-| Teleport/leave game hangs | `TPHandler` polls; it re-resolves everything. If a new game takes longer than a few seconds, the new client version may have moved `FakeDataModel::Pointer`. |
-| Menu keys don't respond | Overlay window doesn't have focus; click the overlay first. |
-| Crash on attach | Roblox closed while the cheat was running; restart both. |
-| `warning MSB8028` (shared intermediates) | Old `celex.vcxproj` build leftovers in `build\release\`; delete the `build` folder and rebuild clean. |
-
----
-
-## Known dead code & leftovers
-
-These exist in the repo but do **nothing** - do not waste time "fixing" them unless you
-intend to finish the feature:
-
-- `rbx/configs/configs.h` (+ `json.hpp`, `json_fwd.hpp`) - JSON config save/load was never
-  wired in (nothing includes it; `Globals::configsPath` is undefined). Deleting it is safe.
-- `Options::SilentAim` namespace in `rbx/globals/options.h` - leftover from the removed
-  silent aim feature; nothing reads it. Safe to delete.
-- `features/silentaim.h` was **removed** (its offsets, `PlayerMouse::Hit/Target/UnitRay`,
-  are not in the current dump). If a future dump contains them, the feature can be
-  re-implemented following the aimbot patterns.
-- `Offsetsnewest.txt` - an old offsets dump for an **older** client build
-  (`version-5cf2272675e145f5`), kept as reference only. Do not confuse it with `rbx/offsets.h`.
-- `NekroWare/NekroWare.filters` - the `.filters` file still contains stale include paths from
-  an even older layout; it only affects Solution Explorer grouping, not the build.
 
 ---
 

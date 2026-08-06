@@ -21,114 +21,132 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\imgui\imgui.cpp">
+    <ClCompile Include="overlay\imgui\imgui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\imgui\imgui_demo.cpp">
+    <ClCompile Include="overlay\imgui\imgui_demo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\imgui\imgui_draw.cpp">
+    <ClCompile Include="overlay\imgui\imgui_draw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\imgui\imgui_impl_dx11.cpp">
+    <ClCompile Include="overlay\imgui\imgui_impl_dx11.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\imgui\imgui_impl_win32.cpp">
+    <ClCompile Include="overlay\imgui\imgui_impl_win32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\imgui\imgui_tables.cpp">
+    <ClCompile Include="overlay\imgui\imgui_tables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\imgui\imgui_widgets.cpp">
+    <ClCompile Include="overlay\imgui\imgui_widgets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="overlay\renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="features\aimbot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\crosshair.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\esp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\fly.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\hitboxexpander.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\macro.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\misc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\speed.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\triggerbot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="features\worldcache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Memory\MemoryManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="globals.h">
+    <ClInclude Include="overlay\imgui\imconfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\colors.h">
+    <ClInclude Include="overlay\imgui\imgui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\console.h">
+    <ClInclude Include="overlay\imgui\imgui_impl_dx11.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Offsets\offsets.h">
+    <ClInclude Include="overlay\imgui\imgui_impl_win32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\imconfig.h">
+    <ClInclude Include="overlay\imgui\imgui_internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\imgui.h">
+    <ClInclude Include="overlay\imgui\imstb_rectpack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\imgui_impl_dx11.h">
+    <ClInclude Include="overlay\imgui\imstb_textedit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\imgui_impl_win32.h">
+    <ClInclude Include="overlay\imgui\imstb_truetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\imgui_internal.h">
+    <ClInclude Include="overlay\imgui\KeyBind.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\imstb_rectpack.h">
+    <ClInclude Include="overlay\renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\imstb_textedit.h">
+    <ClInclude Include="overlay\utils\Header.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\imstb_truetype.h">
+    <ClInclude Include="overlay\utils\utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\renderer.h">
+    <ClInclude Include="overlay\utils\W2S.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SDK\SDK.h">
+    <ClInclude Include="rbx\Caches\playercache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\structures.h">
+    <ClInclude Include="rbx\Caches\playerobjectscache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\font\IconsFontAwesome6.h">
+    <ClInclude Include="rbx\Caches\TPHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Caches\playercache.h">
+    <ClInclude Include="rbx\globals\globals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Caches\playerobjectscache.h">
+    <ClInclude Include="rbx\globals\options.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Hacks\esp.h">
+    <ClInclude Include="rbx\math\math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\W2S.h">
+    <ClInclude Include="rbx\offsets.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="options.h">
+    <ClInclude Include="rbx\offsets_registry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Hacks\aimbot.h">
+    <ClInclude Include="rbx\OffsetsLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\imgui\KeyBind.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Caches\TPHandler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\configs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="nlohmann\json.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="nlohmann\json_fwd.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Hacks\misc.h">
+    <ClInclude Include="rbx\SDK\SDK.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
