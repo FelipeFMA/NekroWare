@@ -179,8 +179,11 @@ Offsets are **resolved at runtime** by `rbx/OffsetsLoader.h`, right after attach
 
 1. **Detect the version** - the running `RobloxPlayerBeta.exe` path is read from the
    toolhelp module snapshot; the `version-xxxxxxxxxxxxxxxx` folder name is extracted
-   from it (works for Fishstrap and the official launcher, both use
-   `...\Versions\version-xxx\RobloxPlayerBeta.exe`).
+   from it. Only **Fishstrap** installs are supported
+   (`...\Fishstrap\Versions\version-xxx\RobloxPlayerBeta.exe`): if the client is not
+   launched through Fishstrap, a dialog explains that Fishstrap is required (with a
+   "Download Fishstrap" button pointing to `https://fishstrap.app/`) and NekroWare
+   exits.
 2. **Download** `https://offsets.imtheo.lol/<version>/offsets.hpp` over HTTPS (WinHTTP).
 3. **Parse & apply** - the header is parsed into `Namespace::Member` keys and each
    value is written into the matching runtime variable in `rbx/offsets.h`, via the

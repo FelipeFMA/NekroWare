@@ -2,14 +2,23 @@
 #include <windows.h>
 #include <tlhelp32.h>
 #include <winhttp.h>
+#include <commctrl.h>
+#include <shellapi.h>
 #include <string>
 #include <map>
 #include <cstdint>
+#include <cstdlib>
+#include <thread>
+#include <chrono>
 #include <iostream>
 #include "offsets.h"
 #include "../Memory/MemoryManager.h"
 
 #pragma comment(lib, "winhttp.lib")
+#pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "shell32.lib")
+// Task dialogs need comctl32 v6.
+#pragma comment(linker, "\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 // Maps "Namespace::Member" -> address of the runtime variable in offsets.h.
 // The list is generated from the static dump (tools\gen_offsets_registry.ps1)
@@ -23,8 +32,10 @@ inline std::map<std::string, uintptr_t*> g_OffsetRegistry = {
 namespace OffsetsDynamic
 {
 	// Extracts the "version-xxxxxxxxxxxxxxxx" folder name from the running
-	// RobloxPlayerBeta.exe path (Fishstrap / official launcher both use
-	// ...\Versions\version-xxx\RobloxPlayerBeta.exe). Returns "" on failure.
+	// RobloxPlayerBeta.exe path. Only Fishstrap installs are supported: the
+	// path must contain the Fishstrap launcher folder
+	// (...\Fishstrap\Versions\version-xxx\RobloxPlayerBeta.exe). Returns ""
+	// when the client is not running from Fishstrap.
 	inline std::string GetRunningRobloxVersion()
 	{
 		HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, Memory->getProcessId());
@@ -49,13 +60,54 @@ namespace OffsetsDynamic
 		if (!found)
 			return "";
 
-		std::string path = me.szExePath;
-		size_t start = path.rfind("version-");
+		std::string lower = me.szExePath;
+		for (auto& c : lower)
+			c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+		if (lower.find("fishstrap") == std::string::npos)
+			return "";
+
+		size_t start = lower.find("version-");
 		if (start == std::string::npos)
 			return "";
 
-		size_t end = path.find_first_of("\\/", start);
-		return path.substr(start, end - start);
+		size_t end = lower.find_first_of("\\/", start);
+		return lower.substr(start, end - start);
+	}
+
+	// MessageBox telling the user that only Fishstrap is supported, with an
+	// "OK" (close NekroWare) and a "Download Fishstrap" (opens fishstrap.app)
+	// button. Returns true if the user chose to open the download page.
+	inline bool ConfirmFishstrapRequired()
+	{
+		TASKDIALOG_BUTTON buttons[] = {
+			{ 1, L"OK" },
+			{ 2, L"Download Fishstrap" },
+		};
+		TASKDIALOGCONFIG tc{};
+		tc.cbSize = sizeof(tc);
+		tc.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION;
+		tc.pszMainIcon = TD_WARNING_ICON;
+		tc.pszWindowTitle = L"NekroWare";
+		tc.pszMainInstruction = L"Fishstrap is required";
+		tc.pszContent = L"NekroWare found a Roblox client that was not launched through Fishstrap.\r\n"
+			L"Without Fishstrap, NekroWare cannot determine the Roblox version and load the correct offsets.\r\n\r\n"
+			L"Install Fishstrap, launch Roblox with it, and run NekroWare again.";
+		tc.pButtons = buttons;
+		tc.cButtons = 2;
+		tc.nDefaultButton = 1;
+
+		int result = 0;
+		HRESULT hr = TaskDialogIndirect(&tc, &result, nullptr, nullptr);
+		if (FAILED(hr) || result == 0) // no comctl32 v6 - fall back to a plain MessageBox
+		{
+			int mb = MessageBoxW(NULL,
+				L"NekroWare requires Roblox to be installed/launched through Fishstrap, otherwise it cannot auto-load offsets.\n\n"
+				L"Install Fishstrap (fishstrap.app) and run the cheat again.",
+				L"NekroWare - Fishstrap required",
+				MB_ICONWARNING | MB_YESNO);
+			return mb == IDYES;
+		}
+		return result == 2;
 	}
 
 	// Downloads the offsets header for a version from offsets.imtheo.lol.
@@ -186,16 +238,25 @@ namespace OffsetsDynamic
 	}
 
 	// Full pipeline: detect the running client's version, download the
-	// matching offsets header, apply it. Falls back to the built-in static
-	// offsets (from rbx/offsets.h) on any failure.
+	// matching offsets header, apply it. Exits NekroWare with an explanatory
+	// dialog if the running Roblox is not launched through Fishstrap. Falls
+	// back to the built-in static offsets (from rbx/offsets.h) on download
+	// failures.
 	inline void LoadOffsets()
 	{
 		std::string version = GetRunningRobloxVersion();
 		if (version.empty())
 		{
-			std::cout << "[-] Could not detect Roblox version from process path" << std::endl;
-			std::cout << "[*] Using built-in offsets (version " << Offsets::ClientVersion << ")" << std::endl;
-			return;
+			std::cout << "[-] Could not detect a Fishstrap Roblox version from the process path" << std::endl;
+			bool openSite = ConfirmFishstrapRequired();
+			if (openSite)
+			{
+				std::cout << "[*] Opening https://fishstrap.app/ ..." << std::endl;
+				ShellExecuteW(NULL, L"open", L"https://fishstrap.app/", NULL, NULL, SW_SHOWNORMAL);
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+			std::cout << "[-] NekroWare requires Fishstrap, exiting..." << std::endl;
+			std::exit(0);
 		}
 
 		std::cout << "[*] Detected Roblox version: " << version << std::endl;
