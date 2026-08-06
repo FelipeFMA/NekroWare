@@ -1,0 +1,26 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: windows-2025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Release x64
+        run: msbuild NekroWare.sln /m /p:Configuration=Release /p:Platform=x64 /v:minimal /nologo
+
+      - name: Upload artifact (NekroWare.exe only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NekroWare
+          path: build/NekroWare.exe
+          if-no-files-found: error
