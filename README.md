@@ -1,6 +1,6 @@
 # NekroWare
 
-External memory cheat for Roblox (formerly "Celex"), built in C++20 for x64 Windows.
+External memory cheat for Roblox, built in C++20 for x64 Windows.
 It reads/writes the Roblox client process directly and renders an in-game style overlay menu with ImGui + DirectX 11.
 
 > **Disclaimer:** This project is for educational and private use only. Using it violates the Roblox ToS and your account may be banned. Use at your own risk.
@@ -566,3 +566,9 @@ intend to finish the feature:
   (`version-5cf2272675e145f5`), kept as reference only. Do not confuse it with `rbx/offsets.h`.
 - `NekroWare/NekroWare.filters` - the `.filters` file still contains stale include paths from
   an even older layout; it only affects Solution Explorer grouping, not the build.
+
+---
+
+## Thanks
+
+Thanks to **Celex** - NekroWare started as a fork of it and uses it as a base.
