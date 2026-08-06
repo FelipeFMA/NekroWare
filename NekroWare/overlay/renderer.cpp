@@ -308,7 +308,7 @@ void ShowImgui()
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        if (GetAsyncKeyState(VK_INSERT) & 1)
+        if ((GetAsyncKeyState(VK_INSERT) & 1) || (GetAsyncKeyState(VK_RSHIFT) & 1))
         {
             menu_open = !menu_open;
             SetTransparency(hwnd, !menu_open);
