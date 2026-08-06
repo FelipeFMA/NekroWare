@@ -83,7 +83,7 @@ NekroWare/
     utils/utils.h                 misc helpers + default accent color
     utils/Header.h                embedded icon/logo font data
     imgui/                        ImGui 1.9x-ish + DX11/Win32 backends + KeyBind widget
-build/                            Build output (NekroWare.exe) + intermediates (build/shit)
+build/                            Build output (NekroWare.exe) + intermediates (build/release)
 build.bat                         One-click Release|x64 build script (see Building)
 tools/gen_offsets_registry.ps1    Regenerates offsets_registry.h after replacing offsets.h
 README.md                         This file
@@ -546,7 +546,7 @@ no old values may be kept.
 | Teleport/leave game hangs | `TPHandler` polls; it re-resolves everything. If a new game takes longer than a few seconds, the new client version may have moved `FakeDataModel::Pointer`. |
 | Menu keys don't respond | Overlay window doesn't have focus; click the overlay first. |
 | Crash on attach | Roblox closed while the cheat was running; restart both. |
-| `warning MSB8028` (shared intermediates) | Old `celex.vcxproj` build leftovers in `build\shit\`; delete the `build` folder and rebuild clean. |
+| `warning MSB8028` (shared intermediates) | Old `celex.vcxproj` build leftovers in `build\release\`; delete the `build` folder and rebuild clean. |
 
 ---
 
