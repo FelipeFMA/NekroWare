@@ -1,11 +1,268 @@
 #pragma once
 #include <algorithm>
 #include <cmath>
+#include <mutex>
+#include <cstring>
 #include "../overlay/utils/W2S.h"
 #include "../overlay/imgui/imgui.h"
 #include "../rbx/globals/options.h"
 #include "../rbx/globals/globals.h"
 #include "../overlay/imgui/KeyBind.h"
+#include "worldcache.h"
+
+inline bool RayIntersectsAABB(const Vectors::Vector3& origin, const Vectors::Vector3& dir, float maxDist,
+                              const Vectors::Vector3& center, const Vectors::Vector3& halfSize)
+{
+	float tmin = 0.0f;
+	float tmax = maxDist;
+	float t1max = -FLT_MAX;
+
+	float origs[3] = { origin.x, origin.y, origin.z };
+	float dirs[3] = { dir.x, dir.y, dir.z };
+	float centers[3] = { center.x, center.y, center.z };
+	float halves[3] = { halfSize.x, halfSize.y, halfSize.z };
+
+	for (int i = 0; i < 3; ++i)
+	{
+		if (std::fabs(dirs[i]) < 1e-6f)
+		{
+			if (origs[i] < centers[i] - halves[i] || origs[i] > centers[i] + halves[i])
+				return false;
+		}
+		else
+		{
+			float inv = 1.0f / dirs[i];
+			float t1 = (centers[i] - halves[i] - origs[i]) * inv;
+			float t2 = (centers[i] + halves[i] - origs[i]) * inv;
+			if (t1 > t2)
+				std::swap(t1, t2);
+			t1max = (std::max)(t1max, t1);
+			tmin = (std::max)(tmin, t1);
+			tmax = (std::min)(tmax, t2);
+			if (tmin > tmax)
+				return false;
+		}
+	}
+	// The box's entry point is behind the ray origin - the camera is clipping
+	// into this part, so it must not block the ray.
+	if (t1max < 0.0f)
+		return false;
+	return true;
+}
+
+// Transforms a world-space vector into a part's local space using the
+// transpose of its rotation (orthonormal, so inverse == transpose).
+inline Vectors::Vector3 InverseRotate(const Matrixes::Matrix3x3& m, const Vectors::Vector3& v)
+{
+	return Vectors::Vector3{
+		m.r00 * v.x + m.r10 * v.y + m.r20 * v.z,
+		m.r01 * v.x + m.r11 * v.y + m.r21 * v.z,
+		m.r02 * v.x + m.r12 * v.y + m.r22 * v.z
+	};
+}
+
+// Draws a rotated OBB (part local -> world) on screen as a 3D wireframe box.
+inline void DrawOBB(ImDrawList* drawList, const Vectors::Vector3& center, const Vectors::Vector3& size, const Matrixes::Matrix3x3& rot, ImU32 color, float thickness = 1.5f)
+{
+	Vectors::Vector3 half = size * 0.5f;
+	// 8 corners in local space.
+	Vectors::Vector3 localCorners[8] = {
+		{ -half.x, -half.y, -half.z }, { half.x, -half.y, -half.z },
+		{ half.x,  half.y, -half.z }, { -half.x,  half.y, -half.z },
+		{ -half.x, -half.y,  half.z }, { half.x, -half.y,  half.z },
+		{ half.x,  half.y,  half.z }, { -half.x,  half.y,  half.z }
+	};
+
+	// Transform into world space via the rotation matrix (columns = axes).
+	Vectors::Vector3 worldCorners[8];
+	for (int i = 0; i < 8; i++)
+	{
+		auto& l = localCorners[i];
+		worldCorners[i] = center + Vectors::Vector3{
+			rot.r00 * l.x + rot.r01 * l.y + rot.r02 * l.z,
+			rot.r10 * l.x + rot.r11 * l.y + rot.r12 * l.z,
+			rot.r20 * l.x + rot.r21 * l.y + rot.r22 * l.z
+		};
+	}
+
+	ImVec2 pts[8];
+	for (int i = 0; i < 8; i++)
+	{
+		auto s = WorldToScreen(worldCorners[i]);
+		pts[i] = ImVec2(s.x, s.y);
+	}
+
+	// 12 edges of the box.
+	static const int edges[12][2] = {
+		{0,1},{1,2},{2,3},{3,0},
+		{4,5},{5,6},{6,7},{7,4},
+		{0,4},{1,5},{2,6},{3,7}
+	};
+	for (auto& e : edges)
+		drawList->AddLine(pts[e[0]], pts[e[1]], color, thickness);
+}
+
+// Walks one player's character subtree and collects every descendant part
+// (bones, accessories, held tools...) so none of its own geometry ever counts
+// as a blocker for its own ray.
+inline void CollectSubtreeParts(const RobloxInstance& character, std::vector<uintptr_t>& out, int count)
+{
+	if (!character.address || count > 512)
+		return;
+	for (auto& child : character.GetChildren())
+	{
+		if (count > 512)
+			return;
+		if (!child.address)
+			continue;
+		uintptr_t primitive = Memory->read<uintptr_t>(child.address + Offsets::BasePart::Primitive);
+		if (primitive != 0)
+		{
+			out.push_back(child.address);
+			count++;
+		}
+		else
+		{
+			CollectSubtreeParts(child, out, count);
+		}
+	}
+}
+
+// Re-reads one part's geometry from the process right now (single syscall).
+// Returns false for terrain-scale/stale entries.
+inline bool ReadLivePart(AimbotVis::WorldPart& wp)
+{
+	if (!wp.primitive)
+		return false;
+
+	constexpr uintptr_t SNAP_BASE = Offsets::Primitive::Rotation;
+	constexpr uintptr_t SNAP_POS = Offsets::Primitive::Position - SNAP_BASE;
+	constexpr uintptr_t SNAP_SIZE = Offsets::Primitive::Size - SNAP_BASE;
+	constexpr uintptr_t SNAP_LEN = Offsets::Primitive::Size - SNAP_BASE + sizeof(Vectors::Vector3);
+
+	uint8_t buffer[SNAP_LEN];
+	Memory->readRaw(wp.primitive + SNAP_BASE, buffer, SNAP_LEN);
+
+	memcpy(&wp.rotation, buffer + 0, sizeof(wp.rotation));
+	memcpy(&wp.position, buffer + SNAP_POS, sizeof(wp.position));
+	memcpy(&wp.size, buffer + SNAP_SIZE, sizeof(wp.size));
+
+	if (wp.size.x > 100000.0f || wp.size.y > 100000.0f || wp.size.z > 100000.0f)
+	{
+		wp.size = { 0.f, 0.f, 0.f };
+		return false;
+	}
+	return true;
+}
+
+inline bool IsTargetVisible(const RobloxPlayer& target, const Vectors::Vector3& targetPos, AimbotVis::WorldPart* outBlock = nullptr)
+{
+	AimbotVis::DebugTested = 0;
+	AimbotVis::DebugBlocked = 0;
+
+	if (Globals::Roblox::Camera.address == 0)
+		return true;
+
+	Vectors::Vector3 camPos = Memory->read<Vectors::Vector3>(Globals::Roblox::Camera.address + Offsets::Camera::Position);
+
+	Vectors::Vector3 delta = targetPos - camPos;
+	float maxDist = delta.Magnitude();
+	if (maxDist < 0.001f)
+		return true;
+	Vectors::Vector3 dir = delta * (1.0f / maxDist);
+
+	std::shared_ptr<AimbotVis::WorldParts> parts;
+	std::shared_ptr<std::vector<uintptr_t>> chars;
+	{
+		std::lock_guard<std::mutex> lock(AimbotVis::WorldMutex);
+		parts = AimbotVis::World;
+	}
+	{
+		std::lock_guard<std::mutex> lock(AimbotVis::CharactersMutex);
+		chars = AimbotVis::Characters;
+	}
+	if (!parts)
+		return true;
+
+	for (auto& wp : *parts)
+	{
+		if (wp.size.x < 0.25f && wp.size.y < 0.25f && wp.size.z < 0.25f)
+			continue; // tiny debris
+		if (wp.size.x == 0.0f && wp.size.y == 0.0f && wp.size.z == 0.0f)
+			continue; // stale/terrain entry
+
+		AimbotVis::DebugTested++;
+
+		// Cheap pass against the cached snapshot (may be up to ~150ms old).
+		// The box is inflated (+50% extent) so a part that moved between
+		// refreshes can never dodge the live re-verify below by sitting just
+		// outside where the snapshot thinks it was.
+		Vectors::Vector3 localOrigin = InverseRotate(wp.rotation, camPos - wp.position);
+		Vectors::Vector3 localDir = InverseRotate(wp.rotation, dir);
+		Vectors::Vector3 halfSize = wp.size * 0.75f;
+
+		if (!RayIntersectsAABB(localOrigin, localDir, maxDist, { 0.f, 0.f, 0.f }, halfSize))
+			continue;
+
+		// Cached geometry says this part blocks. Verify against THIS frame's
+		// live geometry before refusing to aim, so stale data can't cause a
+		// wrong verdict for 150ms.
+		AimbotVis::DebugBlocked++;
+		if (!ReadLivePart(wp))
+			continue;
+		if (wp.size.x < 0.25f && wp.size.y < 0.25f && wp.size.z < 0.25f)
+			continue;
+
+		localOrigin = InverseRotate(wp.rotation, camPos - wp.position);
+		localDir = InverseRotate(wp.rotation, dir);
+		halfSize = wp.size * 0.5f;
+
+		if (RayIntersectsAABB(localOrigin, localDir, maxDist, { 0.f, 0.f, 0.f }, halfSize))
+		{
+			// Final safety: walk the part's LIVE parent chain right now. If it
+			// is currently attached to a known character model or the camera
+			// (e.g. a body that just respawned and is being added to an avatar,
+			// custom-avatar accessories, held weapons outside the model), it is
+			// not a real cover - ignore it. Zero impact on the common case.
+			uintptr_t cur = wp.address;
+			bool isAvatarNow = false;
+			for (int i = 0; i < 8 && cur != 0; i++)
+			{
+				if (cur == Globals::Roblox::Camera.address)
+				{
+					isAvatarNow = true;
+					break;
+				}
+				if (cur == Globals::Roblox::Workspace.address)
+					break;
+				if (chars && IsOneOf(*chars, cur))
+				{
+					isAvatarNow = true;
+					break;
+				}
+				cur = Memory->read<uintptr_t>(cur + Offsets::Instance::Parent);
+			}
+			if (isAvatarNow)
+				continue;
+			// Record what really blocked this ray for the menu debug.
+			RobloxInstance blockInst(wp.address);
+			std::string cls = blockInst.Class();
+			std::string nm = blockInst.Name();
+			{
+				std::lock_guard<std::mutex> lock(AimbotVis::WorldMutex);
+				strncpy_s(AimbotVis::LastBlockClass, cls.c_str(), sizeof(AimbotVis::LastBlockClass) - 1);
+				strncpy_s(AimbotVis::LastBlockName, nm.c_str(), sizeof(AimbotVis::LastBlockName) - 1);
+				AimbotVis::LastBlockPos = wp.position;
+				AimbotVis::LastBlockSize = wp.size;
+				AimbotVis::LastBlockRot = wp.rotation;
+			}
+			if (outBlock)
+				*outBlock = wp;
+			return false;
+		}
+	}
+	return true;
+}
 
 inline Vectors::Vector3 GetVelocity(const RobloxInstance& part)
 {
@@ -19,7 +276,7 @@ inline Vectors::Vector3 GetVelocity(const RobloxInstance& part)
 	return Memory->read<Vectors::Vector3>(primitiveAddr + Offsets::Primitive::AssemblyLinearVelocity);
 }
 
-inline Vectors::Vector3 GetNearestBonePosition(const RobloxPlayer& player)
+inline Vectors::Vector3 GetNearestBonePosition(const RobloxPlayer& player, bool applyPrediction = true)
 {
     POINT p;
     GetCursorPos(&p);
@@ -68,7 +325,7 @@ inline Vectors::Vector3 GetNearestBonePosition(const RobloxPlayer& player)
         }
     }
 
-    if (Options::Aimbot::Prediction && bestPart.address != 0) {
+    if (applyPrediction && Options::Aimbot::Prediction && bestPart.address != 0) {
         Vectors::Vector3 velocity = GetVelocity(bestPart);
         return Vectors::Vector3{
             bestPos.x + velocity.x / Options::Aimbot::PredictionX,
@@ -80,10 +337,10 @@ inline Vectors::Vector3 GetNearestBonePosition(const RobloxPlayer& player)
     return bestPos;
 }
 
-inline Vectors::Vector3 GetTargetPosition(const RobloxPlayer& player)
+inline Vectors::Vector3 GetTargetPosition(const RobloxPlayer& player, bool applyPrediction = true)
 {
     if (Options::Aimbot::NearestAim)
-        return GetNearestBonePosition(player);
+        return GetNearestBonePosition(player, applyPrediction);
 
     Vectors::Vector3 basePos;
     RobloxInstance targetPart(0);
@@ -184,7 +441,7 @@ inline Vectors::Vector3 GetTargetPosition(const RobloxPlayer& player)
     }
     
     // Apply prediction if enabled
-    if (Options::Aimbot::Prediction && targetPart.address != 0)
+    if (applyPrediction && Options::Aimbot::Prediction && targetPart.address != 0)
     {
         Vectors::Vector3 velocity = GetVelocity(targetPart);
         
@@ -253,6 +510,9 @@ inline RobloxPlayer GetClosestPlayer()
 
         if (distance < maxDistance && distance <= Options::Aimbot::FOV)
         {
+            if (Options::Aimbot::VisibilityCheck && !IsTargetVisible(player, GetTargetPosition(player, false)))
+                continue;
+
             maxDistance = distance;
             target = player;
         }
@@ -607,7 +867,8 @@ inline void RunAimbot(ImDrawList* drawList)
         if (Options::Aimbot::CurrentTarget.address == 0 ||
             Options::Aimbot::CurrentTarget.Health == 0 ||
             (Options::Aimbot::CurrentTarget.Health <= 1 && Options::Aimbot::DownedCheck) ||
-            (Options::Aimbot::TeamCheck && IsTeammate(Options::Aimbot::CurrentTarget, localTeamState)))
+            (Options::Aimbot::TeamCheck && IsTeammate(Options::Aimbot::CurrentTarget, localTeamState)) ||
+            (Options::Aimbot::VisibilityCheck && !IsTargetVisible(Options::Aimbot::CurrentTarget, GetTargetPosition(Options::Aimbot::CurrentTarget, false))))
         {
             Options::Aimbot::CurrentTarget = GetClosestPlayer();
         }
@@ -632,6 +893,37 @@ inline void RunAimbot(ImDrawList* drawList)
     }
 
     auto sensitivity = Memory->read<float>(Memory->getBaseAddress() + Offsets::MouseService::SensitivityPointer);
+
+    // Debug: draw a ray from the camera to every near enemy, green = visible,
+    // red = blocked. Lets you SEE what the visibility check thinks.
+    if (Options::Aimbot::VisibilityCheck && Options::Aimbot::DebugRays)
+    {
+        ImVec2 center2D = ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+        for (auto& player : Globals::Caches::CachedPlayerObjects)
+        {
+            if (IsLocalPlayer(player) || !player.HumanoidRootPart.address || player.Health <= 0)
+                continue;
+            if (Options::Aimbot::TeamCheck && IsTeammate(player, localTeamState))
+                continue;
+            auto aimPos = GetTargetPosition(player, false);
+            Vectors::Vector3 diff = aimPos - localHRP.Position();
+            if (diff.Magnitude() > Options::Aimbot::Range)
+                continue;
+            Vectors::Vector2 aim2D = WorldToScreen(aimPos);
+            if (aim2D.x == -1.0f && aim2D.y == -1.0f)
+                continue;
+            AimbotVis::WorldPart blk;
+            bool visible = IsTargetVisible(player, aimPos, &blk);
+            ImColor color = visible ? IM_COL32(0, 255, 0, 200) : IM_COL32(255, 0, 0, 200);
+            drawList->AddLine(center2D, ImVec2(aim2D.x, aim2D.y), color, 1.0f);
+            if (!visible)
+            {
+                // Draw a yellow box around whatever blocked this enemy.
+                if (blk.size.x > 0.0f && blk.size.y > 0.0f && blk.size.z > 0.0f)
+                    DrawOBB(drawList, blk.position, blk.size, blk.rotation, IM_COL32(255, 255, 0, 220), 1.5f);
+            }
+        }
+    }
 
     if (target.address != 0)
     {

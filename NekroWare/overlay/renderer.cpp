@@ -438,6 +438,13 @@ void ShowImgui()
                             ImGui::PushStyleColor(ImGuiCol_CheckMark, main_color);
                             ImGui::Checkbox("Enabled", &Options::Aimbot::Aimbot);
                             ImGui::Checkbox("Team Check", &Options::Aimbot::TeamCheck);
+                            static const char* aimbotTeamModes[]{ "Team", "Clothing" };
+                            ImGui::Combo("Team Detector", &Options::Teams::Mode, aimbotTeamModes, IM_ARRAYSIZE(aimbotTeamModes));
+                            ImGui::Checkbox("Visibility Check", &Options::Aimbot::VisibilityCheck);
+                            ImGui::Checkbox("Debug Rays", &Options::Aimbot::DebugRays);
+                            ImGui::Text("World Parts: %d   Chars: %d", AimbotVis::Count(), AimbotVis::CharCount());
+                            ImGui::Text("Last Block: %s [%s]", AimbotVis::LastBlockName, AimbotVis::LastBlockClass);
+                            ImGui::Text("Ray Tested/Blocked: %d/%d", AimbotVis::DebugTested, AimbotVis::DebugBlocked);
                             ImGui::Checkbox("Knocked Check", &Options::Aimbot::DownedCheck);
                             ImGui::Checkbox("Sticky Aim", &Options::Aimbot::StickyAim);
                             ImGui::Checkbox("Prediction", &Options::Aimbot::Prediction);

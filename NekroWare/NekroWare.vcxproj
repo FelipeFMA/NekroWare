@@ -179,6 +179,7 @@
     <ClInclude Include="features\triggerbot.h" />
     <ClInclude Include="features\macro.h" />
     <ClInclude Include="features\crosshair.h" />
+    <ClInclude Include="features\worldcache.h" />
   </ItemGroup>
   <!-- Assembly Files -->
   <ItemGroup>

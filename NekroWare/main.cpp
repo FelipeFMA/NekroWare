@@ -10,6 +10,7 @@
 #include "features/hitboxexpander.h"
 #include "features/fly.h"
 #include "features/speed.h"
+#include "features/worldcache.h"
 #include "rbx/Caches/playercache.h"
 #include "rbx/Caches/playerobjectscache.h"
 #include "rbx/Caches/TPHandler.h"
@@ -153,6 +154,7 @@ int main()
     
     std::thread(CachePlayers).detach();
     std::thread(CachePlayerObjects).detach();
+    std::thread(CacheWorldParts).detach();
     std::thread(TPHandler).detach();
     std::thread(MiscLoop).detach();
     std::thread(RunHitboxExpander).detach();

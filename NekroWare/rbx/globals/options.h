@@ -101,6 +101,8 @@ namespace Options
 
 		inline bool Aimbot = false;
 		inline bool TeamCheck = false;
+		inline bool VisibilityCheck = false;
+		inline bool DebugRays = false;
 		inline bool DownedCheck = false;
 		inline bool StickyAim = false;
 		inline float FOV = 100.f;

@@ -42,6 +42,11 @@ public:
 		return false;
 	}
 
+	inline RobloxInstance Parent() const
+	{
+		return RobloxInstance(Memory->read<uintptr_t>(address + Offsets::Instance::Parent));
+	}
+
 	inline std::vector<RobloxInstance> GetChildren() const
 	{
 		uintptr_t childrenStart = Memory->read<uintptr_t>(address + Offsets::Instance::ChildrenStart);

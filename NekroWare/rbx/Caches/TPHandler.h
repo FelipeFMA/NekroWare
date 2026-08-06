@@ -1,6 +1,7 @@
 #pragma once
 #include "../globals/options.h"
 #include "../globals/globals.h"
+#include "../../features/worldcache.h"
 #include <thread>
 #include <vector>
 
@@ -46,6 +47,7 @@ inline void TPHandler()
 
 			Globals::Caches::CachedPlayers.clear();
 			Globals::Caches::CachedPlayerObjects.clear();
+			AimbotVis::Clear();
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
